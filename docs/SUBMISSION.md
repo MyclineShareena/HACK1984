@@ -1,6 +1,6 @@
 # IncidentVoice: from spoken symptoms to verified recovery
 
-**Team Tensor Titans · HACK1984**
+**Team Tensor Titans · HACK1984** · Mycline Shareena, Sanika Girase
 
 *Speak the symptoms. Agents find the root cause and fix it after you approve.*
 

@@ -171,6 +171,9 @@ hits = search_incidents("pool exhausted after deploy", k=3)
 
 Built by **Tensor Titans** for HACK1984, a privacy-first hackathon.
 
+| Collaborator | GitHub |
+|---|---|
+| Mycline Shareena | [@MyclineShareena](https://github.com/MyclineShareena) |
+| Sanika Girase | [@sanikagirase](https://github.com/sanikagirase) |
+
 - Repository: [MyclineShareena/HACK1984](https://github.com/MyclineShareena/HACK1984)
-  scaffolding, the agent pipeline, the privacy layer, tests and the automated demo capture. The
-  team directed the design, reviewed the changes, and tested the voice flow end to end.
