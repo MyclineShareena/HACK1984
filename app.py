@@ -10,7 +10,7 @@ import altair as alt
 import pandas as pd
 import streamlit as st
 
-from engine import llm, stt, tts
+from engine import ENV_LOADED, llm, stt, tts
 from engine.agents import fmt_t
 from engine.orchestrator import run_investigation
 from engine.report import build_report
@@ -72,8 +72,11 @@ with st.sidebar:
         st.error("Ollama not reachable at " + llm.OLLAMA + ". Agents will use rule-based fallbacks.", icon="🔴")
     if stt.api_key():
         st.success("Gradium STT + TTS key loaded", icon="🎤")
+        st.caption("Key source: " + (".env file" if "GRADIUM_API_KEY" in ENV_LOADED else
+                                     "terminal environment (overrides .env)"))
     else:
-        st.warning("GRADIUM_API_KEY not set. Voice input is disabled; type or upload instead.", icon="🎤")
+        st.warning("GRADIUM_API_KEY not set. Add it to the .env file (see .env.example) and restart. "
+                   "Until then, type or upload instead.", icon="🎤")
 
     st.markdown("### 🛡️ Privacy")
     egress = read_log()

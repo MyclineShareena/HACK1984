@@ -15,7 +15,7 @@ Gradium STT, scrubbed summary text to Gradium TTS) both go through a leak gate a
 
 **By the numbers:** 158/158 planted secrets removed (100% recall per type, 0 false positives) ·
 correct root cause ranked #1 (~66% confidence) · diagnosis in 25–35 s on a laptop · wrong fix caught by
-verification, right fix verified (error rate 82% → 0%) · 21 tests, fully offline.
+verification, right fix verified (error rate 82% → 0%) · 23 tests, fully offline.
 
 ![demo](docs/incidentvoice_demo.gif)
 
@@ -28,9 +28,13 @@ verification, right fix verified (error rate 82% → 0%) · 21 tests, fully offl
 ```bash
 git clone https://github.com/MyclineShareena/HACK1984.git && cd HACK1984
 ollama pull qwen2.5:7b             # once; any Ollama model works (llama3.2:3b is faster)
-export GRADIUM_API_KEY=...         # optional: enables voice input and spoken summaries
+cp .env.example .env               # then put your Gradium key in .env (optional: voice in + out)
 ./run.sh                           # creates .venv, installs deps, serves http://localhost:8501
 ```
+
+Keys and the model live in `.env` (git-ignored, created from `.env.example` on first run), so
+nothing has to be typed into the terminal. A variable you `export` in the terminal still wins
+over `.env`, and the sidebar shows which one the app is using.
 
 Manual equivalent:
 
@@ -114,9 +118,11 @@ HACK1984/
   app.py                  Streamlit UI (5-step flow)
   run.sh                  one-command start
   .streamlit/config.toml  dark theme, telemetry off, localhost-only, minimal toolbar
+  .env.example            config template; copy to .env (git-ignored) for your key and model
   engine/
     stt.py                Gradium streaming STT (websocket, 24 kHz PCM, live partials)
     tts.py                Gradium TTS talk-back (websocket, 48 kHz PCM → WAV), egress-gated
+    env.py                tiny stdlib .env loader (terminal variables take precedence)
     llm.py                Ollama client, JSON-schema output, egress-gated if remote
     data.py               log parsing (JSON lines or plain text), scrubbing, analysis
     agents.py             triage, logs, deploys, dependencies, history, root cause, actions
@@ -127,7 +133,7 @@ HACK1984/
   data/                   synthetic scenario (seed 1984): deploys, services, 15 postmortems;
                           logs/ + planted_secrets.json are generated on first run (they hold FAKE
                           secrets for the scrubber tests, so they're kept out of git)
-  tests/                  21 tests (scrubber recall, egress gate, search, offline engine, talk-back)
+  tests/                  23 tests (scrubber recall, egress gate, search, offline engine, talk-back, .env)
   scripts/capture_demo.py headless-Chrome walkthrough → docs/screenshots + docs/*.gif
   docs/                   SUBMISSION.md (write-up, slide numbers, video script), screenshots,
                           demo GIF, sample_postmortem.md, demo_incident.wav (spoken test input)
@@ -136,7 +142,10 @@ HACK1984/
 
 ## Configuration
 
-| Env var | Default | Meaning |
+Set these in `.env` (see `.env.example`), or export them in the terminal, which overrides `.env`.
+Restart the app after changing `.env`.
+
+| Variable | Default | Meaning |
 |---|---|---|
 | `GRADIUM_API_KEY` | (unset) | Enables voice input and spoken summaries |
 | `GRADIUM_STT_URL` | `wss://api.gradium.ai/api/speech/asr` | e.g. the EU endpoint `wss://eu.api.gradium.ai/api/speech/asr` |
@@ -164,7 +173,7 @@ hits = search_incidents("pool exhausted after deploy", k=3)
 ## Tests and demo assets
 
 ```bash
-.venv/bin/python -m unittest discover tests     # 21 tests, < 1 s, no LLM needed
+.venv/bin/python -m unittest discover tests     # 23 tests, < 1 s, no LLM needed
 .venv/bin/python scripts/capture_demo.py        # with the app running: screenshots + GIF
 .venv/bin/python scripts/capture_demo.py --wav docs/demo_incident.wav   # same, via live Gradium voice
 ```
