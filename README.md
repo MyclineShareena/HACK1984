@@ -14,7 +14,7 @@ Ollama, local BM25 retrieval, and regex PII scrubbing. The two outbound calls (i
 Gradium STT, scrubbed summary text to Gradium TTS) both go through a leak gate and an audit log.
 
 **By the numbers:** 158/158 planted secrets removed (100% recall per type, 0 false positives) ·
-correct root cause ranked #1 at ~66% · diagnosis in 25–35 s on a laptop · wrong fix caught by
+correct root cause ranked #1 (~66% confidence) · diagnosis in 25–35 s on a laptop · wrong fix caught by
 verification, right fix verified (error rate 82% → 0%) · 21 tests, fully offline.
 
 ![demo](docs/incidentvoice_demo.gif)
@@ -28,7 +28,7 @@ verification, right fix verified (error rate 82% → 0%) · 21 tests, fully offl
 ```bash
 git clone https://github.com/MyclineShareena/HACK1984.git && cd HACK1984
 ollama pull qwen2.5:7b             # once; any Ollama model works (llama3.2:3b is faster)
-export GRADIUM_API_KEY=...         # optional: enables voice input
+export GRADIUM_API_KEY=...         # optional: enables voice input and spoken summaries
 ./run.sh                           # creates .venv, installs deps, opens http://localhost:8501
 ```
 
@@ -119,7 +119,7 @@ HACK1984/
   data/                   synthetic scenario (seed 1984): deploys, services, 15 postmortems;
                           logs/ + planted_secrets.json are generated on first run (they hold FAKE
                           secrets for the scrubber tests, so they're kept out of git)
-  tests/                  19 tests (scrubber recall, egress gate, search, offline engine)
+  tests/                  21 tests (scrubber recall, egress gate, search, offline engine, talk-back)
   scripts/capture_demo.py headless-Chrome walkthrough → docs/screenshots + docs/*.gif
   docs/                   screenshots, demo GIF, SUBMISSION.md
   demo_scrub.py           privacy demo for judges (raw vs scrubbed lines + leak gate)
@@ -189,3 +189,12 @@ the same root cause ranked #1.
   connect to CI/CD and a service catalog.
 - **Spoken numbers aren't scrubbed.** The scrubber is regex-based, so a phone number read
   out as words ("four one five…") is not caught. Local Whisper is the planned fix.
+
+## Team
+
+Built by **Tensor Titans** for HACK1984, a privacy-first hackathon.
+
+- Repository: [MyclineShareena/HACK1984](https://github.com/MyclineShareena/HACK1984)
+- Built with [Claude Code](https://claude.com/claude-code) (Anthropic) as an AI pair programmer:
+  scaffolding, the agent pipeline, the privacy layer, tests and the automated demo capture. The
+  team directed the design, reviewed the changes, and tested the voice flow end to end.
