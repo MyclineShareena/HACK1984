@@ -190,7 +190,7 @@ def main():
         d.shot("01_report_incident", full=False)
 
         if WAV:  # voice: upload a recording, stream the live Gradium transcript
-            c.js("[...document.querySelectorAll('summary')].find(s => s.innerText.includes('No microphone'))?.click()")
+            c.js("[...document.querySelectorAll('summary')].find(s => s.innerText.includes('upload a WAV recording'))?.click()")
             time.sleep(1.5)
             c("DOM.enable")
             root = c("DOM.getDocument", depth=-1, pierce=True)["root"]["nodeId"]

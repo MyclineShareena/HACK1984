@@ -44,8 +44,11 @@ Requirements: Python 3.10+, [Ollama](https://ollama.com) running locally. If Oll
 every agent falls back to rules and the demo still works end to end.
 
 ### Demo in 60 seconds
-1. Click **✨ Use sample incident**, or record your voice and press **📝 Transcribe live with
-   Gradium**. You can also type a description or attach a `.log` file.
+1. Press the 🎙️ recorder, describe the incident out loud, stop, then press **📝 Transcribe live
+   with Gradium**. You can also type the description or attach a `.log` file, or click
+   **✨ Use sample incident**. For a repeatable demo (noisy room, automated capture), upload
+   `docs/demo_incident.wav`, a spoken incident made with macOS `say`, under "Or upload a WAV
+   recording" instead of using the microphone.
 2. Click **🚀 Investigate**. Watch the agent trace stream in (~25 s with `qwen2.5:7b`).
 3. Review the findings: error timeline with the deploy marker, the suspicious config diff,
    similar past incidents, the blast-radius graph, and ranked hypotheses with evidence.
@@ -178,8 +181,6 @@ the result. In the demo the wrong fix is caught as not verified.
 the same root cause ranked #1.
 
 ## Limitations (honest)
-- **No microphone?** Upload `docs/demo_incident.wav` (a spoken incident made with macOS `say`) in
-  "Upload a WAV recording".
 - **Voice input isn't truly live.** `st.audio_input` records a clip, then streams it to
   Gradium, so the transcript appears word by word *after* you stop recording. True
   while-you-speak streaming needs a browser component with a short-lived Gradium token.

@@ -114,7 +114,7 @@ left, right = st.columns([3, 2], gap="large")
 with left:
     audio = st.audio_input("🎙️ Describe the incident by voice", sample_rate=24000, disabled=not stt.api_key(),
                            key=f"mic_{ss.audio_key}")
-    with st.expander("No microphone? Upload a WAV recording"):
+    with st.expander("Or upload a WAV recording instead"):
         wav_up = st.file_uploader("WAV file", type=["wav"], label_visibility="collapsed", key=f"wav_{ss.audio_key}")
     voice = audio or wav_up
     live = st.empty()
