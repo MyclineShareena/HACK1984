@@ -15,6 +15,10 @@ a leak gate and an audit log.
 
 ![demo](docs/incidentvoice_demo.gif)
 
+| Live voice transcript (Gradium) | Root cause and evidence | Verified recovery |
+|---|---|---|
+| ![](docs/screenshots/02a_live_transcript.png) | ![](docs/screenshots/04_approval_gate.png) | ![](docs/screenshots/06_recovery_verified.png) |
+
 ## Quick start
 
 ```bash
@@ -135,9 +139,12 @@ hits = search_incidents("pool exhausted after deploy", k=3)
 ```bash
 .venv/bin/python -m unittest discover tests     # 19 tests, < 1 s, no LLM needed
 .venv/bin/python scripts/capture_demo.py        # with the app running: screenshots + GIF
+.venv/bin/python scripts/capture_demo.py --wav docs/demo_incident.wav   # same, via live Gradium voice
 ```
 
 ## Limitations (honest)
+- **No microphone?** Upload `docs/demo_incident.wav` (a spoken incident made with macOS `say`) in
+  "Upload a WAV recording".
 - **Voice input isn't truly live.** `st.audio_input` records a clip, then streams it to
   Gradium, so the transcript appears word by word *after* you stop recording. True
   while-you-speak streaming needs a browser component with a short-lived Gradium token.

@@ -79,4 +79,4 @@ Python · Streamlit · Ollama (Qwen2.5-7B, Llama 3.2-3B) · Gradium STT (websock
 | 1:35 | Approve the **recommended** revert | Error rate falls to 0%, **✅ Verified**. |
 | 1:45 | Generate postmortem; sidebar egress log | "The postmortem writes itself. And here is every byte that left the laptop: only the audio." |
 
-Screenshots: `docs/screenshots/01…08_*.png`. Automated walkthrough GIF: `docs/incidentvoice_demo.gif`.
+Screenshots: `docs/screenshots/01…08_*.png` (`02a_live_transcript.png` shows Gradium streaming the spoken report). Automated walkthrough GIF: `docs/incidentvoice_demo.gif`.

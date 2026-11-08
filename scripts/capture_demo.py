@@ -3,6 +3,8 @@ incident flow, save stage screenshots to docs/screenshots/ and a walkthrough GIF
 
     streamlit run app.py            # in another terminal
     python scripts/capture_demo.py  # needs Google Chrome; uses websockets + Pillow
+    python scripts/capture_demo.py --wav docs/demo_incident.wav   # voice path via Gradium
+                                    # (the app must have GRADIUM_API_KEY set)
 
 The flow deliberately approves a WRONG fix first (restart) to show verification catching it,
 then approves the recommended fix.
@@ -22,7 +24,13 @@ from websockets.sync.client import connect
 
 ROOT = Path(__file__).resolve().parents[1]
 SHOTS = ROOT / "docs" / "screenshots"
-APP = sys.argv[1] if len(sys.argv) > 1 else "http://localhost:8501"
+_args = sys.argv[1:]
+WAV = None
+if "--wav" in _args:
+    i = _args.index("--wav")
+    WAV = str(Path(_args[i + 1]).resolve())
+    del _args[i:i + 2]
+APP = _args[0] if _args else "http://localhost:8501"
 CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 W, H = 1440, 900
 
@@ -180,10 +188,31 @@ def main():
         d.frame(hold=3)
         d.shot("01_report_incident", full=False)
 
-        d.click("Use sample incident")
-        time.sleep(1.5)
-        d.frame(hold=3)
-        d.shot("02_description_ready", full=False)
+        if WAV:  # voice: upload a recording, stream the live Gradium transcript
+            c.js("[...document.querySelectorAll('summary')].find(s => s.innerText.includes('No microphone'))?.click()")
+            time.sleep(1.5)
+            c("DOM.enable")
+            root = c("DOM.getDocument", depth=-1, pierce=True)["root"]["nodeId"]
+            first = c("DOM.querySelectorAll", nodeId=root, selector="input[type=file]")["nodeIds"][0]
+            c("DOM.setFileInputFiles", nodeId=first, files=[WAV])
+            d.click("Transcribe live with Gradium", timeout=30)
+            t0, shot_taken = time.time(), False
+            while time.time() - t0 < 60:
+                if c.js("document.querySelector('textarea')?.value"):
+                    break
+                if c.js("document.querySelector('.iv-live')?.innerText.length > 60") and not shot_taken:
+                    d.shot("02a_live_transcript", full=False)
+                    shot_taken = True
+                d.frame()
+                time.sleep(0.3)
+            time.sleep(1.5)
+            d.frame(hold=3)
+            d.shot("02_description_ready", full=False)
+        else:
+            d.click("Use sample incident")
+            time.sleep(1.5)
+            d.frame(hold=3)
+            d.shot("02_description_ready", full=False)
 
         d.click("Investigate")
         time.sleep(4)
