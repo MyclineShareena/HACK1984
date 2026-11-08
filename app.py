@@ -41,7 +41,7 @@ html, body, [data-testid="stAppViewContainer"], [data-testid="stSidebar"] {overf
 </style>""", unsafe_allow_html=True)
 
 ss = st.session_state
-for k, v in {"description": "", "inv": None, "sim": None, "approvals": [], "executions": [], "report": None}.items():
+for k, v in {"audio_key": 0, "description": "", "inv": None, "sim": None, "approvals": [], "executions": [], "report": None}.items():
     ss.setdefault(k, v)
 if "pending_transcript" in ss:  # set before the text_area widget is created
     ss.description = ss.pop("pending_transcript")
@@ -104,9 +104,10 @@ st.markdown('<p class="iv-hero">🎙️ IncidentVoice</p><p class="iv-sub">Speak
 st.subheader("1 · Report the incident")
 left, right = st.columns([3, 2], gap="large")
 with left:
-    audio = st.audio_input("🎙️ Describe the incident by voice", sample_rate=24000, disabled=not stt.api_key())
+    audio = st.audio_input("🎙️ Describe the incident by voice", sample_rate=24000, disabled=not stt.api_key(),
+                           key=f"mic_{ss.audio_key}")
     with st.expander("No microphone? Upload a WAV recording"):
-        wav_up = st.file_uploader("WAV file", type=["wav"], label_visibility="collapsed")
+        wav_up = st.file_uploader("WAV file", type=["wav"], label_visibility="collapsed", key=f"wav_{ss.audio_key}")
     voice = audio or wav_up
     live = st.empty()
     if voice and st.button("📝 Transcribe live with Gradium", disabled=not stt.api_key()):
@@ -115,9 +116,13 @@ with left:
             for text in stt.transcribe_stream(voice.getvalue()):
                 live.markdown(f'<div class="iv-live"><b>● LIVE</b>&nbsp; {text}</div>', unsafe_allow_html=True)
             ss.pending_transcript = text
+            ss.audio_key += 1  # fresh recorder widget for the next take
             st.rerun()
         except Exception as e:
             st.error(f"Transcription failed: {e}")
+            if stt.last_diagnostics:
+                with st.expander("Gradium diagnostics"):
+                    st.json(stt.last_diagnostics)
     st.text_area("Incident description (the live transcript lands here; edit it or just type)", key="description",
                  height=120, placeholder="e.g. Checkout is throwing 500s since the 2pm deploy…")
 with right:
