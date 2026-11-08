@@ -1,7 +1,8 @@
 """Gradium.ai streaming speech-to-text (wss://api.gradium.ai/api/speech/asr).
 
-Audio is the only thing that leaves the laptop, and it passes the egress gate first
-(size + sha256 logged). Transcript text streams back word by word for the live view.
+The incident audio passes the egress gate first (explicitly allowed binary; size + sha256
+logged). Transcript text streams back word by word for the live view. The only other outbound
+call is the spoken summary in tts.py, which is scrubbed and leak-checked as text.
 
     for partial in transcribe_stream(wav_bytes):   # yields the growing transcript
         print(partial)

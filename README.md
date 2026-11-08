@@ -29,7 +29,7 @@ verification, right fix verified (error rate 82% → 0%) · 21 tests, fully offl
 git clone https://github.com/MyclineShareena/HACK1984.git && cd HACK1984
 ollama pull qwen2.5:7b             # once; any Ollama model works (llama3.2:3b is faster)
 export GRADIUM_API_KEY=...         # optional: enables voice input and spoken summaries
-./run.sh                           # creates .venv, installs deps, opens http://localhost:8501
+./run.sh                           # creates .venv, installs deps, serves http://localhost:8501
 ```
 
 Manual equivalent:
@@ -40,8 +40,12 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 .venv/bin/streamlit run app.py
 ```
 
-Requirements: Python 3.10+, [Ollama](https://ollama.com) running locally. If Ollama is down,
-every agent falls back to rules and the demo still works end to end.
+Then open http://localhost:8501 in your browser.
+
+Requirements: Python 3.10+ (developed on 3.14) and [Ollama](https://ollama.com) running locally.
+A Gradium API key is optional: without it, typing and log upload still work. Google Chrome is
+needed only for `scripts/capture_demo.py`. If Ollama is down, every agent falls back to rules
+and the demo still works end to end.
 
 ### Demo in 60 seconds
 1. Press the 🎙️ recorder, describe the incident out loud, stop, then press **📝 Transcribe live
@@ -49,7 +53,7 @@ every agent falls back to rules and the demo still works end to end.
    **✨ Use sample incident**. For a repeatable demo (noisy room, automated capture), upload
    `docs/demo_incident.wav`, a spoken incident made with macOS `say`, under "Or upload a WAV
    recording" instead of using the microphone.
-2. Click **🚀 Investigate**. Watch the agent trace stream in (~25 s with `qwen2.5:7b`).
+2. Click **🚀 Investigate**. Watch the agent trace stream in (about 30 s with `qwen2.5:7b`).
 3. Review the findings: error timeline with the deploy marker, the suspicious config diff,
    similar past incidents, the blast-radius graph, and ranked hypotheses with evidence.
 4. Optional, to show safety: pick **Restart checkout pods**, tick approval, execute. Health
@@ -109,6 +113,7 @@ every agent falls back to rules and the demo still works end to end.
 HACK1984/
   app.py                  Streamlit UI (5-step flow)
   run.sh                  one-command start
+  .streamlit/config.toml  dark theme, telemetry off, localhost-only, minimal toolbar
   engine/
     stt.py                Gradium streaming STT (websocket, 24 kHz PCM, live partials)
     tts.py                Gradium TTS talk-back (websocket, 48 kHz PCM → WAV), egress-gated
@@ -124,7 +129,8 @@ HACK1984/
                           secrets for the scrubber tests, so they're kept out of git)
   tests/                  21 tests (scrubber recall, egress gate, search, offline engine, talk-back)
   scripts/capture_demo.py headless-Chrome walkthrough → docs/screenshots + docs/*.gif
-  docs/                   screenshots, demo GIF, SUBMISSION.md
+  docs/                   SUBMISSION.md (write-up, slide numbers, video script), screenshots,
+                          demo GIF, sample_postmortem.md, demo_incident.wav (spoken test input)
   demo_scrub.py           privacy demo for judges (raw vs scrubbed lines + leak gate)
 ```
 
@@ -139,7 +145,7 @@ HACK1984/
 | `GRADIUM_PACE` | `0.25` | Audio send pacing (0.25 = 4x real time; lower = faster) |
 | `OLLAMA_HOST` | `http://localhost:11434` | A remote host is allowed but goes through the leak gate |
 | `INCIDENTVOICE_MODEL` | `qwen2.5:7b` | Default model (selectable in the sidebar) |
-| `INCIDENTVOICE_EGRESS_LOG` | `./egress_log.jsonl` | Audit log path |
+| `INCIDENTVOICE_EGRESS_LOG` | `egress_log.jsonl` in the project folder | Audit log path |
 
 ## Privacy layer API (for the agent flow)
 

@@ -81,10 +81,12 @@ def build_report(inv, executions, approvals, model, egress_since=None):
           f"- **Latency:** median {la.get('latency_before_ms')} ms before → {la.get('latency_after_ms')} ms after onset",
           f"- **Symptoms reported:** {', '.join(tri['symptoms'])}", "",
           "## Timeline (UTC)", "| Time | Event |", "|---|---|", *[f"| {t} | {e} |" for t, e in timeline], "",
+          "*Telemetry comes from the synthetic demo scenario (dated 2026-11-05); investigation, approval and "
+          "execution times are the real clock when the demo ran. Health checks use a simulated clock.*", "",
           "## Root cause", f"**{top['statement']}** (confidence {top['confidence']:.0%})", "",
           top.get("explanation", ""), "", "**Evidence**", *[f"- {e}" for e in top["evidence"]], "",
           "**Other hypotheses considered**",
-          *[f"- {h['id']} ({h['confidence']:.0%}): {h['statement']}" for h in rca["hypotheses"][1:4]], "",
+          *[f"- ({h['confidence']:.0%}) {h['statement']}" for h in rca["hypotheses"][1:4]], "",
           "## Similar past incidents (RAG)",
           *[f"- **{h['id']}** {h['title']} (BM25 {h['score']:.1f}). Fix then: {h['fix']}" for h in hits], "",
           "## Remediation and verification"]

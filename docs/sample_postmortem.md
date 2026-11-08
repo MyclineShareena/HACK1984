@@ -22,6 +22,8 @@ The checkout service experienced a severe degradation in performance on 2026-11-
 | 2026-11-08 13:03:40 UTC | APPROVED by on-call engineer: Revert db.pool.max_size on checkout to 50 |
 | 2026-11-08 13:03:45 UTC | Executed (simulated): Revert db.pool.max_size on checkout to 50 → recovery verified |
 
+*Telemetry comes from the synthetic demo scenario (dated 2026-11-05); investigation, approval and execution times are the real clock when the demo ran. Health checks use a simulated clock.*
+
 ## Root cause
 **Deploy v2.3 of checkout changed db.pool.max_size from 50 to 5, starving checkout of capacity under normal load.** (confidence 66%)
 
@@ -36,9 +38,9 @@ The error signatures mention 'db pool saturated' and the recent deploy changed d
 - matches past incident INC-2025-014: Orders API connection pool exhausted after config refactor
 
 **Other hypotheses considered**
-- H-config-db.pool.idle_timeout_s (22%): Deploy v2.3 of checkout changed db.pool.idle_timeout_s from 600 to 120, shortly before errors began.
-- H-config-inventory.timeout_ms (5%): Deploy v2.2 of checkout changed inventory.timeout_ms from 5000 to 10000, shortly before errors began.
-- H-db-postgres (4%): postgres itself is overloaded or unavailable.
+- (22%) Deploy v2.3 of checkout changed db.pool.idle_timeout_s from 600 to 120, shortly before errors began.
+- (5%) Deploy v2.2 of checkout changed inventory.timeout_ms from 5000 to 10000, shortly before errors began.
+- (4%) postgres itself is overloaded or unavailable.
 
 ## Similar past incidents (RAG)
 - **INC-2025-014** Orders API connection pool exhausted after config refactor (BM25 46.8). Fix then: Rolled back to the previous release, restoring pool size 40; errors cleared in 3 minutes. Added an alert on pool wait time and a CI check that flags pool size changes over 50%.
