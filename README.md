@@ -153,7 +153,7 @@ Restart the app after changing `.env`.
 | `GRADIUM_VOICE_ID` | `YTpq7expH9539ERJ` | TTS voice ("Emma" from Gradium's docs) |
 | `GRADIUM_PACE` | `0.25` | Audio send pacing (0.25 = 4x real time; lower = faster) |
 | `OLLAMA_HOST` | `http://localhost:11434` | A remote host is allowed but goes through the leak gate |
-| `INCIDENTVOICE_MODEL` | `qwen2.5:7b` | Default model (selectable in the sidebar) |
+| `INCIDENTVOICE_MODEL` | `qwen2.5:7b` | Default model (a sidebar picker appears once more than one model is pulled) |
 | `INCIDENTVOICE_EGRESS_LOG` | `egress_log.jsonl` in the project folder | Audit log path |
 
 ## Privacy layer API (for the agent flow)

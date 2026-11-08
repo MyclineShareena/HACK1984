@@ -65,8 +65,12 @@ with st.sidebar:
     st.markdown("## 🎙️ IncidentVoice")
     st.caption("Voice-first autonomous incident response")
     if models:
-        model = st.selectbox("Local LLM (Ollama)", models, index=models.index(llm.pick_default(models)))
-        st.success(f"Ollama online · {len(models)} open models", icon="🟢")
+        if len(models) > 1:  # a picker only when there is something to pick
+            model = st.selectbox("Local LLM (Ollama)", models, index=models.index(llm.pick_default(models)))
+            st.success(f"Ollama online · {len(models)} open models", icon="🟢")
+        else:
+            model = models[0]
+            st.success(f"Ollama online · model **{model}** (local, open-source)", icon="🟢")
     else:
         model = llm.DEFAULT_MODEL
         st.error("Ollama not reachable at " + llm.OLLAMA + ". Agents will use rule-based fallbacks.", icon="🔴")
