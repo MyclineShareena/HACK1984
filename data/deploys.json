@@ -1,0 +1,62 @@
+[
+  {
+    "version": "v2.0",
+    "service": "checkout",
+    "timestamp": "2026-10-20T16:12:00Z",
+    "author": "m.okafor",
+    "summary": "Move checkout to new payments client",
+    "config_diff": {
+      "payments.client": {
+        "old": "legacy-http",
+        "new": "psp-sdk-4"
+      }
+    }
+  },
+  {
+    "version": "v2.1",
+    "service": "checkout",
+    "timestamp": "2026-10-28T10:40:00Z",
+    "author": "l.ferreira",
+    "summary": "Enable address autocomplete flag",
+    "config_diff": {
+      "features.address_autocomplete": {
+        "old": false,
+        "new": true
+      }
+    }
+  },
+  {
+    "version": "v2.2",
+    "service": "checkout",
+    "timestamp": "2026-11-03T15:05:00Z",
+    "author": "a.singh",
+    "summary": "Structured logging + raise inventory timeout",
+    "config_diff": {
+      "logging.format": {
+        "old": "text",
+        "new": "json"
+      },
+      "inventory.timeout_ms": {
+        "old": 5000,
+        "new": 10000
+      }
+    }
+  },
+  {
+    "version": "v2.3",
+    "service": "checkout",
+    "timestamp": "2026-11-05T14:00:00Z",
+    "author": "j.park",
+    "summary": "Reduce idle DB connections to cut Postgres costs",
+    "config_diff": {
+      "db.pool.max_size": {
+        "old": 50,
+        "new": 5
+      },
+      "db.pool.idle_timeout_s": {
+        "old": 600,
+        "new": 120
+      }
+    }
+  }
+]

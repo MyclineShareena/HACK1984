@@ -1,0 +1,29 @@
+{
+  "checkout": {
+    "depends_on": [
+      "payments",
+      "inventory",
+      "postgres"
+    ],
+    "tier": 1,
+    "owner": "team-checkout"
+  },
+  "payments": {
+    "depends_on": [
+      "postgres"
+    ],
+    "tier": 1,
+    "owner": "team-payments"
+  },
+  "inventory": {
+    "depends_on": [],
+    "tier": 2,
+    "owner": "team-catalog"
+  },
+  "postgres": {
+    "depends_on": [],
+    "tier": 0,
+    "owner": "team-platform",
+    "max_connections": 400
+  }
+}

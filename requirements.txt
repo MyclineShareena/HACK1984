@@ -1,0 +1,5 @@
+# UI + Gradium websocket + Ollama HTTP. The privacy layer itself is stdlib-only.
+streamlit==1.67.0
+websockets==17.4
+requests==2.34.2
+pillow==13.0.0     # only for scripts/capture_demo.py (GIF)
