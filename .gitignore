@@ -11,3 +11,4 @@ egress_log.jsonl
 # sk_live_/JWT values that would trip GitHub secret scanning.
 data/logs/
 data/planted_secrets.json
+.vscode/
