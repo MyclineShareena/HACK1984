@@ -70,3 +70,37 @@ class TestEngineOffline(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
+
+
+class TestTalkBack(unittest.TestCase):
+    """Gradium TTS summary: speakable, passes the leak gate, fails cleanly without a key."""
+
+    def test_summary_is_speakable_and_gate_clean(self):
+        from engine import tts
+        from privacy_layer import find_residual, scrub
+        agents.llm.chat_json = no_llm
+        try:
+            inv = run_investigation(DESC, model="none")
+        finally:
+            agents.llm.chat_json = TestEngineOffline._orig if hasattr(TestEngineOffline, "_orig") else llm.chat_json
+        env = SimulatedEnvironment(inv["env"]["deploys"], inv["env"]["services"])
+        a = next(x for x in inv["actions"] if x["id"] == inv["rca"]["recommended_action_id"])
+        pre = env.snapshot("checkout")
+        env.execute(a)
+        samples = [pre] + [env.health_check("checkout") for _ in range(8)]
+        text = tts.spoken_summary(inv, {"samples": samples, "action": a, "approver": "on-call engineer"})
+        self.assertIn("database pool max size", text)
+        self.assertNotRegex(text, r"H-|A-|db\.|_|→|\*\*")
+        self.assertEqual(find_residual(text), [])
+        self.assertEqual(scrub(text)[0], text)
+
+    def test_speak_without_key_raises(self):
+        import os
+        from engine import tts
+        old = os.environ.pop("GRADIUM_API_KEY", None)
+        try:
+            with self.assertRaises(tts.TTSError):
+                tts.speak("hello")
+        finally:
+            if old is not None:
+                os.environ["GRADIUM_API_KEY"] = old

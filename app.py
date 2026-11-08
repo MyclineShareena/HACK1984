@@ -10,7 +10,7 @@ import altair as alt
 import pandas as pd
 import streamlit as st
 
-from engine import llm, stt
+from engine import llm, stt, tts
 from engine.agents import fmt_t
 from engine.orchestrator import run_investigation
 from engine.report import build_report
@@ -41,14 +41,14 @@ html, body, [data-testid="stAppViewContainer"], [data-testid="stSidebar"] {overf
 </style>""", unsafe_allow_html=True)
 
 ss = st.session_state
-for k, v in {"audio_key": 0, "description": "", "inv": None, "sim": None, "approvals": [], "executions": [], "report": None}.items():
+for k, v in {"audio_key": 0, "description": "", "inv": None, "sim": None, "approvals": [], "executions": [], "report": None, "tts": None}.items():
     ss.setdefault(k, v)
 if "pending_transcript" in ss:  # set before the text_area widget is created
     ss.description = ss.pop("pending_transcript")
 
 
 def reset():
-    for k in ("inv", "sim", "report"):
+    for k in ("inv", "sim", "report", "tts"):
         ss[k] = None
     ss.approvals, ss.executions = [], []
 
@@ -306,6 +306,27 @@ if ss.executions:
             st.caption(f"Criteria: {v['criteria']}")
             if not v["passed"]:
                 st.error("This action did not restore service. The root cause is still active. Choose another action above.")
+
+# ------------------------------------------------------------------ 4b. talk back (Gradium TTS)
+if verified:
+    final = next(e for e in reversed(ss.executions) if e["verification"]["passed"])
+    with st.container(border=True):
+        st.markdown("#### 🔊 IncidentVoice reports back")
+        if stt.api_key():
+            if st.button("🔊 Speak verified summary (Gradium TTS)", use_container_width=True):
+                summary = tts.spoken_summary(inv, final, attempts=len(ss.executions))
+                try:
+                    with st.spinner("Gradium is synthesizing the summary…"):
+                        wav, sent = tts.speak(summary)
+                    ss.tts = {"wav": wav, "text": sent, "autoplay": True}
+                except Exception as e:  # EgressBlocked, TTSError, network
+                    st.error(f"Text-to-speech failed: {e}")
+            if ss.tts:
+                st.audio(ss.tts["wav"], format="audio/wav", autoplay=ss.tts.pop("autoplay", False))
+                st.caption(f"🛡️ Sent to Gradium after scrubbing + leak gate (logged in the egress audit log): "
+                           f"“{ss.tts['text']}”")
+        else:
+            st.caption("Set GRADIUM_API_KEY to hear the verified summary spoken by Gradium TTS.")
 
 # ------------------------------------------------------------------ 5. report
 if verified:

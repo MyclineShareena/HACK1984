@@ -6,12 +6,16 @@ IncidentVoice is a voice-first, privacy-first incident response prototype. An on
 describes a production incident out loud, with an optional log file. A team of AI agents then
 investigates logs, deploy history, past postmortems and service dependencies, ranks probable
 root causes with evidence, and recommends a fix. After explicit human approval, it executes
-the fix in a simulated production environment, verifies recovery with health checks, and
-writes the postmortem.
+the fix in a simulated production environment, verifies recovery with health checks, **speaks
+the verified summary back** (Gradium text-to-speech), and writes the postmortem.
 
-Everything except speech-to-text runs on the laptop: open-source LLMs via Ollama, local
-BM25 retrieval, and regex PII scrubbing. The one outbound call (audio to Gradium) goes through
-a leak gate and an audit log.
+Everything except Gradium's voice in and voice out runs on the laptop: open-source LLMs via
+Ollama, local BM25 retrieval, and regex PII scrubbing. The two outbound calls (incident audio to
+Gradium STT, scrubbed summary text to Gradium TTS) both go through a leak gate and an audit log.
+
+**By the numbers:** 158/158 planted secrets removed (100% recall per type, 0 false positives) ·
+correct root cause ranked #1 at ~66% · diagnosis in 25–35 s on a laptop · wrong fix caught by
+verification, right fix verified (error rate 82% → 0%) · 21 tests, fully offline.
 
 ![demo](docs/incidentvoice_demo.gif)
 
@@ -49,7 +53,9 @@ every agent falls back to rules and the demo still works end to end.
    checks show the errors return, so the result is **❌ not verified**.
 5. Pick the **⭐ RECOMMENDED** fix (revert `db.pool.max_size` to 50), approve, execute. You
    get **✅ Verified**.
-6. Click **📝 Generate incident report & postmortem**, then download the Markdown.
+6. Click **🔊 Speak verified summary**: Gradium reads the outcome aloud (the exact text sent
+   is shown and audited).
+7. Click **📝 Generate incident report & postmortem**, then download the Markdown.
 
 ## How it works
 
@@ -67,6 +73,7 @@ every agent falls back to rules and the demo still works end to end.
  🎯 Root-cause agent (LLM + evidence scores): ranked hypotheses, explanations
  🛠️ Remediation: action catalog + guardrail (must address top cause) ──► 👤 HUMAN APPROVAL
  ⚙️ Simulated prod executes action ──► 🩺 8 health checks ──► verify (or try another action)
+ 🔊 Talk-back: spoken summary ──► 🛡️ scrub + leak gate ──► Gradium TTS ──► audio (audited)
  📝 Postmortem agent (LLM): Markdown report with timeline, evidence, verification, follow-ups
 ```
 
@@ -83,8 +90,9 @@ every agent falls back to rules and the demo still works end to end.
 - **Human approval.** Nothing executes without a named approver ticking the checkbox.
   Approvals and rejections both go into the report timeline.
 - **Privacy.** Logs are scrubbed on load. The LLM runs on localhost, Streamlit telemetry is
-  off, and the server binds to localhost only. Audio is the only data that leaves the laptop,
-  and it is logged in `egress_log.jsonl` with its size and sha256.
+  off, and the server binds to localhost only. Only voice data leaves the laptop: incident
+  audio (logged with size and sha256) and the scrubbed spoken summary (logged verbatim), both
+  in `egress_log.jsonl`.
 
 ## Project layout
 
@@ -94,6 +102,7 @@ HACK1984/
   run.sh                  one-command start
   engine/
     stt.py                Gradium streaming STT (websocket, 24 kHz PCM, live partials)
+    tts.py                Gradium TTS talk-back (websocket, 48 kHz PCM → WAV), egress-gated
     llm.py                Ollama client, JSON-schema output, egress-gated if remote
     data.py               log parsing (JSON lines or plain text), scrubbing, analysis
     agents.py             triage, logs, deploys, dependencies, history, root cause, actions
@@ -114,8 +123,10 @@ HACK1984/
 
 | Env var | Default | Meaning |
 |---|---|---|
-| `GRADIUM_API_KEY` | (unset) | Enables voice input |
+| `GRADIUM_API_KEY` | (unset) | Enables voice input and spoken summaries |
 | `GRADIUM_STT_URL` | `wss://api.gradium.ai/api/speech/asr` | e.g. the EU endpoint `wss://eu.api.gradium.ai/api/speech/asr` |
+| `GRADIUM_TTS_URL` | `wss://api.gradium.ai/api/speech/tts` | TTS endpoint |
+| `GRADIUM_VOICE_ID` | `YTpq7expH9539ERJ` | TTS voice ("Emma" from Gradium's docs) |
 | `GRADIUM_PACE` | `0.25` | Audio send pacing (0.25 = 4x real time; lower = faster) |
 | `OLLAMA_HOST` | `http://localhost:11434` | A remote host is allowed but goes through the leak gate |
 | `INCIDENTVOICE_MODEL` | `qwen2.5:7b` | Default model (selectable in the sidebar) |
@@ -137,10 +148,27 @@ hits = search_incidents("pool exhausted after deploy", k=3)
 ## Tests and demo assets
 
 ```bash
-.venv/bin/python -m unittest discover tests     # 19 tests, < 1 s, no LLM needed
+.venv/bin/python -m unittest discover tests     # 21 tests, < 1 s, no LLM needed
 .venv/bin/python scripts/capture_demo.py        # with the app running: screenshots + GIF
 .venv/bin/python scripts/capture_demo.py --wav docs/demo_incident.wav   # same, via live Gradium voice
 ```
+
+## Questions judges ask
+
+**"You scrub logs, but the audio goes out unscrubbed?"**
+Yes, and it's bounded: the engineer describes *symptoms* ("checkout is throwing 500s since the
+deploy"), not customer data. The logs, where the customer data lives, never leave the laptop.
+Every audio upload is hashed (sha256) and recorded in the egress audit log, so you can see
+exactly what left and when. A local Whisper option, so the audio never leaves either, is next
+on the roadmap. The talk-back direction is already fully gated: the summary text is scrubbed
+and leak-checked before Gradium sees it.
+
+**"What if the model is wrong?"** It can only choose from a safe action catalog, a guardrail
+overrides picks that don't address the top cause, a human must approve, and health checks verify
+the result. In the demo the wrong fix is caught as not verified.
+
+**"What if Ollama is down?"** Every agent falls back to rules and the demo still completes, with
+the same root cause ranked #1.
 
 ## Limitations (honest)
 - **No microphone?** Upload `docs/demo_incident.wav` (a spoken incident made with macOS `say`) in
@@ -153,4 +181,4 @@ hits = search_incidents("pool exhausted after deploy", k=3)
 - **Uploaded logs are analyzed with the bundled deploys and service map.** Real use would
   connect to CI/CD and a service catalog.
 - **Spoken numbers aren't scrubbed.** The scrubber is regex-based, so a phone number read
-  out as words ("four one five…") is not caught.
+  out as words ("four one five…") is not caught. Local Whisper is the planned fix.
