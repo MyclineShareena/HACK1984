@@ -114,6 +114,33 @@ def read_log(log_path=None):
     return [json.loads(l) for l in path.read_text(encoding="utf-8").splitlines() if l.strip()]
 
 
+def summarize(rows):
+    """Count audit-log rows by kind: speech-to-text uploads, text-to-speech requests, other, blocked."""
+    out = {"stt": 0, "tts": 0, "other": 0, "blocked": 0}
+    for r in rows:
+        if r.get("blocked"):
+            out["blocked"] += 1
+        elif r.get("destination", "").startswith("gradium:speech/asr"):
+            out["stt"] += 1
+        elif r.get("destination", "").startswith("gradium:speech/tts"):
+            out["tts"] += 1
+        else:
+            out["other"] += 1
+    return out
+
+
+def describe(counts):
+    """'1 speech-to-text upload + 1 text-to-speech request, 0 blocked'"""
+    parts = []
+    if counts["stt"]:
+        parts.append(f"{counts['stt']} speech-to-text upload{'s' if counts['stt'] != 1 else ''}")
+    if counts["tts"]:
+        parts.append(f"{counts['tts']} text-to-speech request{'s' if counts['tts'] != 1 else ''}")
+    if counts["other"]:
+        parts.append(f"{counts['other']} other")
+    return (" + ".join(parts) or "nothing") + f", {counts['blocked']} blocked"
+
+
 if __name__ == "__main__":
     rows = read_log()
     print(f"{len(rows)} egress attempts, {sum(r['blocked'] for r in rows)} blocked\n")

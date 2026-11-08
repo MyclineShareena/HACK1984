@@ -2,7 +2,7 @@
 local LLM writes the executive summary and lessons learned (template fallback)."""
 from datetime import datetime, timezone
 
-from privacy_layer import read_log
+from privacy_layer import describe, read_log, summarize
 
 from . import llm
 from .agents import fmt_t
@@ -20,7 +20,7 @@ def _fmt_dt(t):
     return t.strftime("%Y-%m-%d %H:%M:%S UTC") if isinstance(t, datetime) else str(t)
 
 
-def build_report(inv, executions, approvals, model):
+def build_report(inv, executions, approvals, model, egress_since=None):
     tri, la, rca = inv["triage"], inv["logs"], inv["rca"]
     top = rca["hypotheses"][0]
     final = next((e for e in reversed(executions) if e["verification"]["passed"]), None)
@@ -67,9 +67,7 @@ def build_report(inv, executions, approvals, model):
                                            f"{'recovery verified' if e['verification']['passed'] else 'recovery NOT verified'}"))
 
     timeline.sort(key=lambda r: r[0])
-    egress = read_log()
-    sent = [r for r in egress if not r.get("blocked")]
-    blocked = [r for r in egress if r.get("blocked")]
+    egress = [r for r in read_log() if egress_since is None or r["ts"] >= egress_since]
 
     kind = tri["category"].replace("_", " ") if tri["category"] != "other" else "incident"
     md = [f"# Incident report: {tri['affected_service']} {kind} ({tri['severity']})",
@@ -90,9 +88,9 @@ def build_report(inv, executions, approvals, model):
           "## Similar past incidents (RAG)",
           *[f"- **{h['id']}** {h['title']} (BM25 {h['score']:.1f}). Fix then: {h['fix']}" for h in hits], "",
           "## Remediation and verification"]
-    for e in executions:
+    for i, e in enumerate(executions, 1):
         v = e["verification"]
-        md += [f"### {e['action']['title']} ({'✅ verified' if v['passed'] else '❌ not verified'})",
+        md += [f"### Attempt {i}: {e['action']['title']} ({'✅ verified' if v['passed'] else '❌ not verified'})",
                f"Approved by **{e['approver']}** · risk {e['action']['risk']} · simulated environment", "",
                "```", *e["log"], "```", f"Criteria: {v['criteria']}", "",
                "| Check | Error rate | p99 (ms) | Pool waiting | Status |", "|---|---|---|---|---|",
@@ -104,5 +102,6 @@ def build_report(inv, executions, approvals, model):
            f"- Logs were scrubbed on load ({sum(inv['scrubbed'].values())} sensitive values replaced: "
            + ", ".join(f"{k} {v}" for k, v in inv["scrubbed"].items() if v) + ").",
            f"- All reasoning ran on a local open-source model (`{model}` via Ollama). No log data left the machine.",
-           f"- Egress audit log: {len(sent)} outbound requests (speech-to-text audio only), {len(blocked)} blocked by the leak gate."]
+           f"- Egress audit log for this session: {describe(summarize(egress))} by the leak gate. Only voice "
+           "traffic left the machine: the incident audio (hashed) and the scrubbed spoken summary (logged verbatim)."]
     return "\n".join(md), meta

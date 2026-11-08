@@ -81,6 +81,15 @@ The scenario: checkout deploy v2.3 shrank the Postgres pool from 50 to 5.
   health-check verification; the demo shows a wrong fix being caught.
 - **"What if Ollama is down?"** Rule-based fallbacks; the demo still completes.
 
+## What's next
+*(Paste over the Devpost "What's next" section. Spoken summaries are done, so they're no longer listed.)*
+- **Local speech-to-text (Whisper)** so the incident audio never leaves the laptop either.
+- **Truly live transcription** while you speak, with a browser component and short-lived Gradium tokens.
+- **Real integrations:** read-only connectors for CI/CD, Kubernetes, and log and metrics stores,
+  plus a dry-run mode that executes approved actions against staging.
+- **More fault types** in the simulator and analysis: memory leaks, bad feature flags, dependency outages.
+- **Learning from resolved incidents:** each verified postmortem is added to the retrieval index automatically.
+
 ## Tech stack
 Python · Streamlit · Ollama (Qwen2.5-7B, Llama 3.2-3B) · Gradium STT + TTS (websockets) · BM25
 (stdlib) · regex PII scrubber · Altair · Graphviz · headless Chrome (demo capture)

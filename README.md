@@ -88,11 +88,17 @@ every agent falls back to rules and the demo still works end to end.
   gives only brief relief and scale-out only partial relief; reverting the wrong key does
   nothing. Only the real fix passes the health checks.
 - **Human approval.** Nothing executes without a named approver ticking the checkbox.
-  Approvals and rejections both go into the report timeline.
+  Approvals and rejections both go into the report timeline. Each try is labelled
+  ("Attempt 1 ❌ not verified", "Attempt 2 ✅ verified"); once the real fix passes, failed
+  attempts collapse but stay in the record.
+- **Voice in and voice out.** Gradium STT turns the engineer's description into a live
+  transcript; after verification, Gradium TTS speaks the summary back. Both directions pass
+  the same leak gate and audit log.
 - **Privacy.** Logs are scrubbed on load. The LLM runs on localhost, Streamlit telemetry is
   off, and the server binds to localhost only. Only voice data leaves the laptop: incident
   audio (logged with size and sha256) and the scrubbed spoken summary (logged verbatim), both
-  in `egress_log.jsonl`.
+  in `egress_log.jsonl`. The sidebar counts them per session ("🎤 speech-to-text uploads: 1 ·
+  🔊 text-to-speech requests: 1 · ⛔ blocked: 0"), so judges can see exactly what left.
 
 ## Project layout
 
@@ -135,9 +141,10 @@ HACK1984/
 ## Privacy layer API (for the agent flow)
 
 ```python
-from privacy_layer import scrub, log_egress, search_incidents, EgressBlocked
+from privacy_layer import scrub, log_egress, search_incidents, EgressBlocked, read_log, summarize
 clean, counts = scrub(text)                 # [EMAIL] [IP] [CARD] [API_KEY] [TOKEN] [PHONE]
 safe = log_egress("gradium", payload)       # scrub + leak gate + audit log; send `safe`
+summarize(read_log())                       # {"stt": 1, "tts": 1, "other": 0, "blocked": 0}
 hits = search_incidents("pool exhausted after deploy", k=3)
 ```
 

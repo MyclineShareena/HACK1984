@@ -7,6 +7,9 @@ secondaryBackgroundColor = "#1a1d29"
 [browser]
 gatherUsageStats = false   # privacy-first: no Streamlit telemetry
 
+[client]
+toolbarMode = "minimal"   # hides the Deploy button and developer menu
+
 [server]
 headless = true
 address = "localhost"   # privacy-first: not reachable from the network

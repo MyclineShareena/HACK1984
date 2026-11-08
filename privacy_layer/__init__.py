@@ -6,7 +6,7 @@ import importlib
 
 _EXPORTS = {
     "scrub": "scrubber", "scrub_obj": "scrubber", "TYPES": "scrubber",
-    "log_egress": "egress", "EgressBlocked": "egress", "find_residual": "egress", "read_log": "egress",
+    "log_egress": "egress", "EgressBlocked": "egress", "find_residual": "egress", "read_log": "egress", "summarize": "egress", "describe": "egress",
     "search_incidents": "search",
 }
 __all__ = list(_EXPORTS)

@@ -15,7 +15,7 @@ from engine.agents import fmt_t
 from engine.orchestrator import run_investigation
 from engine.report import build_report
 from engine.simulator import SimulatedEnvironment, verify
-from privacy_layer import read_log
+from privacy_layer import describe, read_log, summarize
 
 ROOT = Path(__file__).resolve().parent
 SAMPLE = ("Checkout is down. Customers are getting HTTP 500 errors and the checkout page times out. It started "
@@ -41,6 +41,7 @@ html, body, [data-testid="stAppViewContainer"], [data-testid="stSidebar"] {overf
 </style>""", unsafe_allow_html=True)
 
 ss = st.session_state
+ss.setdefault("session_start", datetime.now(timezone.utc).isoformat(timespec="milliseconds"))
 for k, v in {"audio_key": 0, "description": "", "inv": None, "sim": None, "approvals": [], "executions": [], "report": None, "tts": None}.items():
     ss.setdefault(k, v)
 if "pending_transcript" in ss:  # set before the text_area widget is created
@@ -70,16 +71,21 @@ with st.sidebar:
         model = llm.DEFAULT_MODEL
         st.error("Ollama not reachable at " + llm.OLLAMA + ". Agents will use rule-based fallbacks.", icon="🔴")
     if stt.api_key():
-        st.success("Gradium key loaded: voice in (STT) + voice out (TTS)", icon="🎤")
+        st.success("Gradium STT + TTS key loaded", icon="🎤")
     else:
         st.warning("GRADIUM_API_KEY not set. Voice input is disabled; type or upload instead.", icon="🎤")
 
     st.markdown("### 🛡️ Privacy")
     egress = read_log()
-    sent = [r for r in egress if not r.get("blocked")]
+    mine = summarize([r for r in egress if r["ts"] >= ss.session_start])
     st.markdown(f"- LLM runs **locally**: {'yes' if llm.is_local() else 'NO (remote, gated)'}\n"
-                f"- Outbound requests: **{len(sent)}** · blocked: **{len(egress) - len(sent)}**\n"
-                f"- Logs scrubbed before any agent sees them")
+                f"- Logs scrubbed before any agent sees them\n"
+                f"- **Left this laptop (this session):**\n"
+                f"  - 🎤 speech-to-text uploads: **{mine['stt']}**\n"
+                f"  - 🔊 text-to-speech requests: **{mine['tts']}**\n"
+                + (f"  - other: **{mine['other']}**\n" if mine["other"] else "")
+                + f"  - ⛔ blocked by leak gate: **{mine['blocked']}**")
+    st.caption(f"Everything else stayed local. Full audit log: {len(egress)} entries since install.")
     with st.expander("Egress audit log"):
         if egress:
             for r in egress[-6:][::-1]:
@@ -88,7 +94,9 @@ with st.sidebar:
         else:
             st.caption("Nothing has left this machine.")
     st.divider()
-    st.button("↺ New incident", on_click=lambda: (reset(), ss.update(description="")), use_container_width=True)
+    st.button("↺ New incident", on_click=lambda: (reset(), ss.update(
+        description="", session_start=datetime.now(timezone.utc).isoformat(timespec="milliseconds"))),
+        use_container_width=True)
 
 # ------------------------------------------------------------------ header + stepper
 verified = any(e["verification"]["passed"] for e in ss.executions)
@@ -282,30 +290,46 @@ else:
     st.success("Remediation approved, executed and verified.", icon="✅")
 
 # ------------------------------------------------------------------ 4. execution results
+def render_attempt(n, e):
+    v = e["verification"]
+    head = st.columns([4, 1])
+    head[0].markdown(f"**Attempt {n}: {e['action']['title']}** · approved by {e['approver']} at {fmt_t(e['at'])}")
+    head[1].markdown("### ✅ Verified" if v["passed"] else "### ❌ Not verified")
+    k = st.columns(4)
+    f0, f1 = e["samples"][0], e["samples"][-1]
+    k[0].metric("Error rate", f"{f1['error_rate']:.1%}", f"{(f1['error_rate'] - f0['error_rate']) * 100:+.1f} pts",
+                delta_color="inverse")
+    k[1].metric("p99 latency", f"{f1['p99_ms']} ms", f"{f1['p99_ms'] - f0['p99_ms']:+} ms", delta_color="inverse")
+    k[2].metric("Pool waiting", f1["pool_waiting"], f1["pool_waiting"] - f0["pool_waiting"], delta_color="inverse")
+    k[3].metric("Status", f1["status"])
+    df = pd.DataFrame([{"check": fmt_t(s["t"]), "error rate": s["error_rate"], "p99 (s)": s["p99_ms"] / 1000}
+                       for s in e["samples"]])
+    st.altair_chart(alt.Chart(df).mark_line(point=True, color="#30a46c" if v["passed"] else "#e5484d").encode(
+        x=alt.X("check:N", sort=None, title="health check (simulated clock)"),
+        y=alt.Y("error rate:Q", axis=alt.Axis(format="%"))).properties(height=170), use_container_width=True)
+    st.caption(f"Criteria: {v['criteria']}")
+
+
 if ss.executions:
     st.divider()
     st.subheader("4 · Execution and recovery verification")
-    for e in ss.executions[::-1]:
-        v = e["verification"]
-        with st.container(border=True):
-            head = st.columns([4, 1])
-            head[0].markdown(f"**{e['action']['title']}** · approved by {e['approver']} at {fmt_t(e['at'])}")
-            head[1].markdown("### ✅ Verified" if v["passed"] else "### ❌ Failed")
-            k = st.columns(4)
-            f0, f1 = e["samples"][0], e["samples"][-1]
-            k[0].metric("Error rate", f"{f1['error_rate']:.1%}", f"{(f1['error_rate'] - f0['error_rate']) * 100:+.1f} pts",
-                        delta_color="inverse")
-            k[1].metric("p99 latency", f"{f1['p99_ms']} ms", f"{f1['p99_ms'] - f0['p99_ms']:+} ms", delta_color="inverse")
-            k[2].metric("Pool waiting", f1["pool_waiting"], f1["pool_waiting"] - f0["pool_waiting"], delta_color="inverse")
-            k[3].metric("Status", f1["status"])
-            df = pd.DataFrame([{"check": fmt_t(s["t"]), "error rate": s["error_rate"], "p99 (s)": s["p99_ms"] / 1000}
-                               for s in e["samples"]])
-            st.altair_chart(alt.Chart(df).mark_line(point=True, color="#30a46c" if v["passed"] else "#e5484d").encode(
-                x=alt.X("check:N", sort=None, title="health check (simulated clock)"),
-                y=alt.Y("error rate:Q", axis=alt.Axis(format="%"))).properties(height=170), use_container_width=True)
-            st.caption(f"Criteria: {v['criteria']}")
-            if not v["passed"]:
-                st.error("This action did not restore service. The root cause is still active. Choose another action above.")
+    win = next((i for i, e in enumerate(ss.executions) if e["verification"]["passed"]), None)
+    for i, e in enumerate(ss.executions):
+        n = i + 1
+        if e["verification"]["passed"]:
+            with st.container(border=True):
+                render_attempt(n, e)
+                if n > 1:
+                    st.success(f"Attempt {n} restored service. Earlier attempt(s) above were caught by verification "
+                               "and did not count as a fix.", icon="✅")
+        elif win is not None:  # superseded failure: keep it, but collapsed and clearly labelled
+            with st.expander(f"Attempt {n}: {e['action']['title']} · ❌ not verified (superseded by attempt {win + 1})"):
+                render_attempt(n, e)
+        else:
+            with st.container(border=True):
+                render_attempt(n, e)
+                st.error(f"Attempt {n} did not restore service. The root cause is still active. "
+                         "Choose another action above.")
 
 # ------------------------------------------------------------------ 4b. talk back (Gradium TTS)
 if verified:
@@ -334,7 +358,7 @@ if verified:
     st.subheader("5 · Incident report and postmortem")
     if not ss.report and st.button("📝 Generate incident report & postmortem", type="primary", use_container_width=True):
         with st.spinner("Postmortem agent is writing the report with the local LLM…"):
-            md, _ = build_report(inv, ss.executions, ss.approvals, model)
+            md, _ = build_report(inv, ss.executions, ss.approvals, model, egress_since=ss.session_start)
         out = ROOT / "reports"
         out.mkdir(exist_ok=True)
         path = out / f"incident_{datetime.now(timezone.utc):%Y%m%d_%H%M%S}.md"
