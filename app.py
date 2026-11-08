@@ -71,6 +71,14 @@ with st.sidebar:
         else:
             model = models[0]
             st.success(f"Ollama online · model **{model}** (local, open-source)", icon="🟢")
+        mem = llm.loaded_models()
+        if mem:
+            st.caption("In memory: " + "; ".join(
+                f"**{m['name']}** ({m['processor']}, {m['gb']} GB"
+                + (f", unloads in {m['minutes_left']} min" if m["minutes_left"] is not None else "") + ")"
+                for m in mem))
+        else:
+            st.caption("In memory: none. The selected model loads on first use (a few seconds).")
     else:
         model = llm.DEFAULT_MODEL
         st.error("Ollama not reachable at " + llm.OLLAMA + ". Agents will use rule-based fallbacks.", icon="🔴")

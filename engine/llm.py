@@ -32,6 +32,33 @@ def list_models():
         return []
 
 
+def loaded_models():
+    """Models currently in Ollama's memory (same as `ollama ps`): name, processor, GB, minutes left."""
+    try:
+        r = requests.get(f"{OLLAMA}/api/ps", timeout=3)
+        r.raise_for_status()
+        out = []
+        for m in r.json().get("models", []):
+            size, vram = m.get("size") or 0, m.get("size_vram") or 0
+            proc = "GPU" if size and vram >= size else "CPU" if not vram else f"{round(100 * vram / size)}% GPU"
+            mins = None
+            exp = m.get("expires_at", "")
+            if exp:
+                try:
+                    from datetime import datetime, timezone
+                    head, _, rest = exp.partition(".")
+                    tz = rest[next((i for i, ch in enumerate(rest) if ch in "+-Z"), len(rest)):]
+                    t = datetime.fromisoformat(head + (tz.replace("Z", "+00:00") or "+00:00"))
+                    mins = max(0, round((t - datetime.now(timezone.utc)).total_seconds() / 60))
+                except ValueError:
+                    pass
+            out.append({"name": m.get("name") or m.get("model"), "processor": proc,
+                        "gb": round(size / 1e9, 1), "minutes_left": mins})
+        return out
+    except Exception:
+        return []
+
+
 def pick_default(models):
     if DEFAULT_MODEL in models:
         return DEFAULT_MODEL
