@@ -1,4 +1,4 @@
-# 🎙️ IncidentVoice
+# 🎙️ IncidentVoice -  AI-powered, voice-first IT incident management and autonomous root-cause analysis platform
 
 **Speak the symptoms. Agents find the root cause and fix it after you approve.**
 
