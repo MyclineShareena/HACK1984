@@ -19,9 +19,9 @@ verification, right fix verified (error rate 82% → 0%) · 21 tests, fully offl
 
 ![demo](docs/incidentvoice_demo.gif)
 
-| Live voice transcript (Gradium) | Root cause and evidence | Verified recovery |
+| Voice in: live transcript (Gradium STT) | Wrong fix caught, right fix verified | Voice out: spoken summary (Gradium TTS) |
 |---|---|---|
-| ![](docs/screenshots/02a_live_transcript.png) | ![](docs/screenshots/04_approval_gate.png) | ![](docs/screenshots/06_recovery_verified.png) |
+| ![](docs/screenshots/02a_live_transcript.png) | ![](docs/screenshots/06_recovery_verified.png) | ![](docs/screenshots/06b_talk_back.png) |
 
 ## Quick start
 

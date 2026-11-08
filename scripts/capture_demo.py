@@ -168,7 +168,8 @@ def main():
     SHOTS.mkdir(parents=True, exist_ok=True)
     prof = tempfile.mkdtemp()
     chrome = subprocess.Popen([CHROME, "--headless=new", "--remote-debugging-port=9333", f"--user-data-dir={prof}",
-                               f"--window-size={W},{H}", "--hide-scrollbars", "about:blank"],
+                               f"--window-size={W},{H}", "--hide-scrollbars",
+                               "--autoplay-policy=no-user-gesture-required", "about:blank"],
                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     try:
         for _ in range(50):
@@ -245,6 +246,21 @@ def main():
         time.sleep(2)
         d.frame(scroll="4 · Execution", hold=5)
         d.shot("06_recovery_verified", full=False)
+
+        if c.js("[...document.querySelectorAll('button')].some(b => b.innerText.includes('Speak verified summary'))"):
+            d.click("Speak verified summary")  # Gradium TTS talk-back
+            t0 = time.time()
+            while time.time() - t0 < 60 and not c.js("!!document.querySelector('audio')"):
+                d.frame(scroll="#### 🔊")
+                time.sleep(0.5)
+            time.sleep(1.5)
+            d.scroll("🔊 IncidentVoice reports back")
+            d.frame(hold=5)
+            d.shot("06b_talk_back", full=False)
+            sent = c.js("[...document.querySelectorAll('[data-testid=\"stCaptionContainer\"]')].map(x => x.innerText)"
+                        ".find(t => t.includes('Sent to Gradium'))")
+            dur = c.js("document.querySelector('audio')?.duration")
+            print(f"talk-back audio: {dur:.1f}s; text sent: {sent}" if dur else "talk-back: no audio")
 
         d.click("Generate incident report")
         d.wait_text("Executive summary", 300)

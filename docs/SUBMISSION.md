@@ -97,4 +97,4 @@ Python · Streamlit · Ollama (Qwen2.5-7B, Llama 3.2-3B) · Gradium STT + TTS (w
 | 1:42 | **Speak verified summary** | IncidentVoice says: "Incident resolved and verified…" Say: "And it talks back, through the same leak gate." |
 | 1:52 | Generate postmortem; sidebar egress log | "The postmortem writes itself. And here is every byte that left the laptop: the voice in and the voice out, nothing else." |
 
-Screenshots: `docs/screenshots/01…08_*.png` (`02a_live_transcript.png` shows Gradium streaming the spoken report). Automated walkthrough GIF: `docs/incidentvoice_demo.gif`.
+Screenshots: `docs/screenshots/01…08_*.png` (`02a_live_transcript.png` shows Gradium streaming the spoken report; `06b_talk_back.png` shows Gradium speaking the verified summary). Automated walkthrough GIF: `docs/incidentvoice_demo.gif`.

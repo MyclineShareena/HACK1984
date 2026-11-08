@@ -70,7 +70,7 @@ with st.sidebar:
         model = llm.DEFAULT_MODEL
         st.error("Ollama not reachable at " + llm.OLLAMA + ". Agents will use rule-based fallbacks.", icon="🔴")
     if stt.api_key():
-        st.success("Gradium STT key loaded", icon="🎤")
+        st.success("Gradium key loaded: voice in (STT) + voice out (TTS)", icon="🎤")
     else:
         st.warning("GRADIUM_API_KEY not set. Voice input is disabled; type or upload instead.", icon="🎤")
 
