@@ -294,7 +294,7 @@ def render_attempt(n, e):
     v = e["verification"]
     head = st.columns([4, 1])
     head[0].markdown(f"**Attempt {n}: {e['action']['title']}** · approved by {e['approver']} at {fmt_t(e['at'])}")
-    head[1].markdown("### ✅ Verified" if v["passed"] else "### ❌ Not verified")
+    head[1].markdown("#### ✅ Verified" if v["passed"] else "#### ❌ Not verified")
     k = st.columns(4)
     f0, f1 = e["samples"][0], e["samples"][-1]
     k[0].metric("Error rate", f"{f1['error_rate']:.1%}", f"{(f1['error_rate'] - f0['error_rate']) * 100:+.1f} pts",
@@ -345,6 +345,8 @@ if verified:
                     ss.tts = {"wav": wav, "text": sent, "autoplay": True}
                 except Exception as e:  # EgressBlocked, TTSError, network
                     st.error(f"Text-to-speech failed: {e}")
+                else:
+                    st.rerun()  # redraw so the sidebar's egress counter includes this request
             if ss.tts:
                 st.audio(ss.tts["wav"], format="audio/wav", autoplay=ss.tts.pop("autoplay", False))
                 st.caption(f"🛡️ Sent to Gradium after scrubbing + leak gate (logged in the egress audit log): "
