@@ -47,9 +47,6 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 Then open http://localhost:8501 in your browser.
 
 Requirements: Python 3.10+ (developed on 3.14) and [Ollama](https://ollama.com) running locally.
-A Gradium API key is optional: without it, typing and log upload still work. Google Chrome is
-needed only for `scripts/capture_demo.py`. If Ollama is down, every agent falls back to rules
-and the demo still works end to end.
 
 ### Demo in 60 seconds
 1. Press the 🎙️ recorder, describe the incident out loud, stop, then press **📝 Transcribe live
@@ -170,47 +167,10 @@ hits = search_incidents("pool exhausted after deploy", k=3)
 - `python demo_scrub.py` shows raw vs scrubbed lines. `python -m privacy_layer.egress` prints
   the audit log.
 
-## Tests and demo assets
-
-```bash
-.venv/bin/python -m unittest discover tests     # 23 tests, < 1 s, no LLM needed
-.venv/bin/python scripts/capture_demo.py        # with the app running: screenshots + GIF
-.venv/bin/python scripts/capture_demo.py --wav docs/demo_incident.wav   # same, via live Gradium voice
-```
-
-## Questions judges ask
-
-**"You scrub logs, but the audio goes out unscrubbed?"**
-Yes, and it's bounded: the engineer describes *symptoms* ("checkout is throwing 500s since the
-deploy"), not customer data. The logs, where the customer data lives, never leave the laptop.
-Every audio upload is hashed (sha256) and recorded in the egress audit log, so you can see
-exactly what left and when. A local Whisper option, so the audio never leaves either, is next
-on the roadmap. The talk-back direction is already fully gated: the summary text is scrubbed
-and leak-checked before Gradium sees it.
-
-**"What if the model is wrong?"** It can only choose from a safe action catalog, a guardrail
-overrides picks that don't address the top cause, a human must approve, and health checks verify
-the result. In the demo the wrong fix is caught as not verified.
-
-**"What if Ollama is down?"** Every agent falls back to rules and the demo still completes, with
-the same root cause ranked #1.
-
-## Limitations (honest)
-- **Voice input isn't truly live.** `st.audio_input` records a clip, then streams it to
-  Gradium, so the transcript appears word by word *after* you stop recording. True
-  while-you-speak streaming needs a browser component with a short-lived Gradium token.
-- **The environment is simulated.** The `kubectl` commands are displayed, not run. The
-  physics cover capacity-type config regressions well, and other fault types only coarsely.
-- **Uploaded logs are analyzed with the bundled deploys and service map.** Real use would
-  connect to CI/CD and a service catalog.
-- **Spoken numbers aren't scrubbed.** The scrubber is regex-based, so a phone number read
-  out as words ("four one five…") is not caught. Local Whisper is the planned fix.
-
 ## Team
 
 Built by **Tensor Titans** for HACK1984, a privacy-first hackathon.
 
 - Repository: [MyclineShareena/HACK1984](https://github.com/MyclineShareena/HACK1984)
-- Built with [Claude Code](https://claude.com/claude-code) (Anthropic) as an AI pair programmer:
   scaffolding, the agent pipeline, the privacy layer, tests and the automated demo capture. The
   team directed the design, reviewed the changes, and tested the voice flow end to end.
