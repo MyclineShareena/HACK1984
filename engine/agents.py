@@ -344,7 +344,8 @@ def root_cause_agent(ctx, model):
            "ids), give each a confidence between 0 and 1, and a one-sentence explanation citing evidence. Then choose the "
            "single safest action id that fixes the top cause (prefer the most targeted, reversible fix) and justify it. "
            "narrative: exactly 3 factual sentences: (1) what is broken and since when, (2) the most likely cause with "
-           "the key evidence, (3) the recommended fix. Do not give instructions to the engineer in sentence 1 or 2.")
+           "the key evidence, (3) the recommended fix. Do not give instructions to the engineer in sentence 1 or 2. "
+           "Never mention hypothesis or action ids (like H-... or A-...) in explanations or the narrative.")
     user = "EVIDENCE:\n" + "\n".join(evidence) + "\n\nHYPOTHESES:\n" + hyp_txt + "\n\nALLOWED ACTIONS:\n" + act_txt
     out, meta = llm.chat_json(sys, user, RCA_SCHEMA, model)
 

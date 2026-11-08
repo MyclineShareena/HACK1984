@@ -118,6 +118,11 @@ def transcribe_stream(wav_bytes, language="en"):
                 for i in range(0, len(pcm), step):
                     ws.send(json.dumps({"type": "audio", "audio": base64.b64encode(pcm[i:i + step]).decode()}))
                     time.sleep(0.08 * PACE)
+                # 1.5 s of trailing silence + flush so the recognizer emits the last word(s)
+                silence = base64.b64encode(bytes(step)).decode()
+                for _ in range(int(1.5 / 0.08)):
+                    ws.send(json.dumps({"type": "audio", "audio": silence}))
+                ws.send(json.dumps({"type": "flush", "flush_id": 1}))
                 ws.send(json.dumps({"type": "end_of_stream"}))
             except Exception as e:  # socket closed by server error
                 last_diagnostics["send_error"] = f"{type(e).__name__}: {e}"
